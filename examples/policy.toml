@@ -1,0 +1,33 @@
+version = 1
+allowed_actions = [
+  "inventory.collect",
+  "health.collect",
+  "logs.collect",
+  "integrity.verify",
+  "service.status",
+  "service.restart",
+  "config.audit",
+  "config.apply",
+  "file.retrieve",
+  "backup.create",
+]
+allowed_services = ["sshd"]
+redaction_patterns = ["(?i)password=[^\\s]+", "(?i)token=[^\\s]+"]
+max_read_bytes = 8388608
+max_artifact_bytes = 33554432
+max_output_bytes = 1048576
+backup_directory = "../state/backups"
+staging_directory = "../state/staging"
+log_sources = { system = "/var/log/syslog" }
+integrity_roots = { etc = "/etc" }
+backup_sources = { application = "/srv/application" }
+
+[file_targets.sshd_config]
+path = "/etc/ssh/sshd_config"
+mode = 384
+validator = "validate_sshd"
+
+[command_profiles.validate_sshd]
+program = "/usr/sbin/sshd"
+args = ["-t", "-f", "{path}"]
+timeout_seconds = 30

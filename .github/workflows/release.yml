@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x86_64
+            source: target/release/hailmary
+            artifact: hailmary-linux-x86_64
+          - os: macos-14
+            name: macos-aarch64
+            source: target/release/hailmary
+            artifact: hailmary-macos-aarch64
+          - os: windows-latest
+            name: windows-x86_64
+            source: target/release/hailmary.exe
+            artifact: hailmary-windows-x86_64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked
+      - name: Stage artifact on Unix
+        if: runner.os != 'Windows'
+        run: cp "${{ matrix.source }}" "${{ matrix.artifact }}"
+      - name: Stage artifact on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Copy-Item "${{ matrix.source }}" "${{ matrix.artifact }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create checksums
+        working-directory: artifacts
+        run: sha256sum hailmary-* > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/hailmary-*
+            artifacts/SHA256SUMS
+          generate_release_notes: true

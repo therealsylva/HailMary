@@ -1,0 +1,13 @@
+version = 1
+node_id = "node-001"
+policy = "policy.toml"
+state_database = "../state/agent-node-001.db"
+
+[controller]
+address = "controller.internal:7443"
+server_name = "controller.internal"
+ca_certificate = "../state/pki/ca.crt"
+client_certificate = "../state/pki/agents/node-001.crt"
+client_private_key = "../state/pki/agents/node-001.key"
+poll_seconds = 15
+max_frame_bytes = 67108864
