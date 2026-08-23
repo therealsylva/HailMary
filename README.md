@@ -10,6 +10,7 @@ HailMary provides:
 - Offline trust stores, key fingerprints, revocation state and role restrictions
 - One- or two-person approval thresholds based on task risk
 - Per-sender monotonic replay protection, expiration and not-before controls
+- Opt-in automatic `.hail` ingestion from local folders or mounted USB media
 - A controller and outbound-polling agents connected using TLS 1.3 mutual authentication
 - Crash-safe agent execution journals that refuse to blindly replay uncertain mutations
 - Tamper-evident controller audit logs
@@ -122,6 +123,26 @@ hailmary controller import --config controller.toml --input transfer/HM-inventor
 hailmary controller serve --config controller.toml
 hailmary agent run --config agent.toml
 ```
+
+Automatic ingress can replace the manual `controller import` step. Configure `[listener]` in
+`controller.toml`, set `enabled = true`, and list one or more inbox or mounted-media paths. The
+normal `controller serve` command starts the listener alongside the agent-facing mTLS service:
+
+```toml
+[listener]
+enabled = true
+inboxes = ["/var/lib/hailmary/inbox", "/media/hailmary"]
+state_directory = "/var/lib/hailmary/ingress"
+poll_seconds = 2
+settle_seconds = 2
+max_bundle_bytes = 67108864
+```
+
+The listener waits for each `.hail` to stop changing, copies it into a local crash-safe spool, and
+then runs the same cryptographic and policy checks as a manual import. It does not modify the source
+drive. Use `hailmary controller listen --config controller.toml` to run only the ingress listener.
+See [docs/AUTO_INGRESS.md](docs/AUTO_INGRESS.md) for receipts, quarantine behavior and deployment
+guidance.
 
 When all targets finish:
 

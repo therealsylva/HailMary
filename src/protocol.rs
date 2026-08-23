@@ -48,6 +48,14 @@ pub fn serve(controller: Controller) -> Result<()> {
     let tls = Arc::new(server_tls_config(&controller.config.network)?);
     let listener = TcpListener::bind(&address)?;
     let controller = Arc::new(controller);
+    if controller
+        .config
+        .listener
+        .as_ref()
+        .is_some_and(|config| config.enabled)
+    {
+        crate::listener::spawn(Arc::clone(&controller))?;
+    }
     for connection in listener.incoming() {
         match connection {
             Ok(socket) => {

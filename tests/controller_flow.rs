@@ -50,6 +50,7 @@ fn hail_to_mary_controller_flow_is_replay_safe_and_audited() {
             max_frame_bytes: 1024 * 1024,
             lease_seconds: 60,
         },
+        listener: None,
         approvals: ApprovalConfig {
             read_only: 1,
             reversible: 1,

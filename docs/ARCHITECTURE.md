@@ -12,7 +12,7 @@ Transfer stations are deployment controls, not HailMary agents. An ingress stati
 
 ### Controller
 
-The controller is the only HailMary component that consumes ingress bundles inside the protected network. It verifies the signature threshold and sender permissions before decrypting a job. Accepted jobs enter a SQLite-backed queue and append to a hash-chained audit log.
+The controller is the only HailMary component that consumes ingress bundles inside the protected network. It verifies the signature threshold and sender permissions before decrypting a job. Accepted jobs enter a SQLite-backed queue and append to a hash-chained audit log. An optional polling listener copies stable `.hail` files from configured folders or mounted removable media into a protected local spool before invoking this exact import path.
 
 ### Agents
 
@@ -40,6 +40,7 @@ If an agent restarts after recording that a task began but before recording its 
 
 - Operator sender sequences: `operator-state.db` inside the identity directory
 - Controller jobs, results, replay state, exports and audit chain: controller SQLite database
+- Listener pending, accepted and rejected bundles plus receipts: configured local ingress state directory
 - Agent execution journal: one SQLite database per node
 - Private keys: encrypted `.hmk` files
 - Public identities: `.hmpub` files

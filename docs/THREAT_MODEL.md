@@ -34,6 +34,10 @@
 | Controller impersonation | Agent-pinned CA and TLS server-name verification |
 | Crash-induced duplicate mutation | Persistent execution journal and uncertain-state refusal |
 | Audit-row modification | SHA-256 hash chain verified by `controller audit-verify` |
+| Partially copied `.hail` | Stable-file delay plus metadata checks before local spooling |
+| USB removal during import | Complete local copy is made before verification and queueing |
+| Repeated file or listener restart | Content-addressed archive and exact-bundle idempotency |
+| Malformed automatic input | Normal bundle limits and verification, then local quarantine |
 | Unbounded data processing | Bundle, frame, log, output and artifact limits |
 
 ## Residual risks

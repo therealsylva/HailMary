@@ -16,7 +16,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$work_directory/secrets" "$work_directory/state"
+mkdir -p "$work_directory/secrets" "$work_directory/state" "$work_directory/transfer/inbox"
 printf '%s' 'operator smoke test password' > "$work_directory/secrets/operator.password"
 printf '%s' 'controller smoke test password' > "$work_directory/secrets/controller.password"
 chmod 600 "$work_directory/secrets"/*.password
@@ -52,6 +52,14 @@ identity_password_file = "secrets/controller.password"
 trust_store = "state/controller-trust.json"
 database = "state/controller.db"
 outbox = "state/outbox"
+
+[listener]
+enabled = true
+inboxes = ["transfer/inbox"]
+state_directory = "state/ingress"
+poll_seconds = 1
+settle_seconds = 0
+max_bundle_bytes = 16777216
 
 [network]
 bind = "127.0.0.1:$port"
@@ -102,11 +110,8 @@ job_id=$("$binary" job create \
   --recipient "$work_directory/state/controller/identity.hmpub" \
   --action inventory.collect \
   --target node-001 \
-  --output "$work_directory/request.hail" |
+  --output "$work_directory/transfer/inbox/request.hail" |
   python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])')
-"$binary" controller import \
-  --config "$work_directory/controller.toml" \
-  --input "$work_directory/request.hail" >/dev/null
 
 "$binary" controller serve --config "$work_directory/controller.toml" \
   >"$work_directory/controller.log" 2>&1 &
@@ -125,6 +130,12 @@ if [[ "$completed" != true ]]; then
   cat "$work_directory/controller.log" >&2
   cat "$work_directory/agent.log" >&2
   echo "agent could not complete smoke-test job" >&2
+  exit 1
+fi
+
+if ! compgen -G "$work_directory/state/ingress/accepted/*.hail" >/dev/null; then
+  cat "$work_directory/controller.log" >&2
+  echo "listener did not archive the imported .hail bundle" >&2
   exit 1
 fi
 
