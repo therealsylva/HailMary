@@ -19,6 +19,12 @@ pub struct Controller {
     trust: TrustStore,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportOutcome {
+    pub job_id: String,
+    pub already_imported: bool,
+}
+
 impl Controller {
     pub fn load(config: ControllerConfig, password: &[u8]) -> Result<Self> {
         let identity = Identity::load(&config.identity_directory, password)?;
@@ -35,6 +41,9 @@ impl Controller {
     pub fn initialize(config: &ControllerConfig) -> Result<()> {
         initialize_database(&config.database)?;
         fs::create_dir_all(&config.outbox)?;
+        if let Some(listener) = config.listener.as_ref().filter(|listener| listener.enabled) {
+            crate::listener::prepare_state_directory(listener)?;
+        }
         Ok(())
     }
 
@@ -163,6 +172,32 @@ impl Controller {
         )?;
         transaction.commit()?;
         Ok(job.job_id)
+    }
+
+    pub fn import_hail_idempotent(&self, bundle: &Bundle) -> Result<ImportOutcome> {
+        if let Some(job_id) = self.exact_import(bundle)? {
+            return Ok(ImportOutcome {
+                job_id,
+                already_imported: true,
+            });
+        }
+        match self.import_hail(bundle) {
+            Ok(job_id) => Ok(ImportOutcome {
+                job_id,
+                already_imported: false,
+            }),
+            Err(error @ Error::Replay { .. }) => {
+                if let Some(job_id) = self.exact_import(bundle)? {
+                    Ok(ImportOutcome {
+                        job_id,
+                        already_imported: true,
+                    })
+                } else {
+                    Err(error)
+                }
+            }
+            Err(error) => Err(error),
+        }
     }
 
     pub fn claim(&self, node_id: &str) -> Result<Option<Job>> {
@@ -450,6 +485,25 @@ impl Controller {
         } else {
             Err(Error::Authentication(format!("unenrolled node {node_id}")))
         }
+    }
+
+    fn exact_import(&self, bundle: &Bundle) -> Result<Option<String>> {
+        let envelope = canonical_json(bundle)?;
+        let connection = open_database(&self.config.database)?;
+        let existing: Option<(String, String, Vec<u8>)> = connection
+            .query_row(
+                "SELECT job_id, bundle_id, envelope FROM jobs
+                 WHERE bundle_id = ?1 OR job_id = ?2 LIMIT 1",
+                params![bundle.protected.bundle_id, bundle.protected.job_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()?;
+        Ok(existing.and_then(|(job_id, bundle_id, stored)| {
+            (job_id == bundle.protected.job_id
+                && bundle_id == bundle.protected.bundle_id
+                && stored == envelope)
+                .then_some(job_id)
+        }))
     }
 }
 

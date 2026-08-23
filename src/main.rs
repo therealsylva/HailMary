@@ -16,6 +16,7 @@ use rustls_pki_types::CertificateDer;
 use rustls_pki_types::pem::PemObject;
 use serde_json::{Map, Value, json};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration as StdDuration;
 use uuid::Uuid;
@@ -204,6 +205,10 @@ enum ControllerCommand {
         job_id: Option<String>,
     },
     AuditVerify {
+        #[arg(long)]
+        config: PathBuf,
+    },
+    Listen {
         #[arg(long)]
         config: PathBuf,
     },
@@ -558,6 +563,11 @@ fn controller_command(command: ControllerCommand) -> Result<()> {
         ControllerCommand::AuditVerify { config } => {
             let count = load_controller(&config)?.verify_audit()?;
             print_json(&json!({"valid": true, "entries": count}))
+        }
+        ControllerCommand::Listen { config } => {
+            let controller = Arc::new(load_controller(&config)?);
+            println!("HailMary ingress listener active");
+            hailmary::listener::Listener::new(controller)?.run()
         }
         ControllerCommand::Serve { config } => {
             let controller = load_controller(&config)?;

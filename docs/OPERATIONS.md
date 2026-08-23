@@ -14,6 +14,10 @@
 
 Do not reuse one drive for both directions. Do not plug protected-network media into an internet-facing workstation.
 
+When automatic ingress is enabled, steps 4 and 5 are performed by the controller listener. The
+source file remains on the removable device; remove the device only after an `imported` event and
+receipt are recorded. See [AUTO_INGRESS.md](AUTO_INGRESS.md).
+
 ## Two-person approval
 
 Add both the controller and reviewer as encryption recipients when creating the job:
@@ -61,7 +65,7 @@ The controller counts distinct trusted operator identities whose action and risk
 
 Example systemd units are under `packaging/systemd`. Copy the release binary to `/usr/local/bin/hailmary`, configurations to `/etc/hailmary`, identities and trust stores to `/var/lib/hailmary`, then adjust ownership and `ReadWritePaths` for the local task policy.
 
-The provided units intentionally apply hardening. Some task profiles need additional filesystem or kernel permissions; grant only the exact capability required instead of disabling all hardening.
+The provided units intentionally apply hardening. Some task profiles need additional filesystem or kernel permissions; grant only the exact capability required instead of disabling all hardening. For automatic ingress, grant the controller service read-only access to each mount point and read-write access only to the configured local listener state directory.
 
 ## Backup and recovery
 

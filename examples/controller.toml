@@ -5,6 +5,14 @@ trust_store = "../state/controller-trust.json"
 database = "../state/controller.db"
 outbox = "../state/outbox"
 
+[listener]
+enabled = false
+inboxes = ["../transfer/inbox", "/media/hailmary"]
+state_directory = "../state/ingress"
+poll_seconds = 2
+settle_seconds = 2
+max_bundle_bytes = 67108864
+
 [network]
 bind = "0.0.0.0:7443"
 tls_certificate = "../state/pki/server.crt"

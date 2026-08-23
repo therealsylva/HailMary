@@ -1,8 +1,10 @@
 use crate::model::RiskLevel;
-use crate::util::{DEFAULT_MAX_FRAME_BYTES, read_limited, validate_identifier};
+use crate::util::{
+    DEFAULT_MAX_BUNDLE_BYTES, DEFAULT_MAX_FRAME_BYTES, read_limited, validate_identifier,
+};
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,6 +62,18 @@ fn default_max_frame_bytes() -> usize {
     DEFAULT_MAX_FRAME_BYTES
 }
 
+fn default_listener_poll_seconds() -> u64 {
+    2
+}
+
+fn default_listener_settle_seconds() -> u64 {
+    2
+}
+
+fn default_max_bundle_bytes() -> u64 {
+    DEFAULT_MAX_BUNDLE_BYTES
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ControllerNetworkConfig {
@@ -81,6 +95,21 @@ pub struct NodeAuthorization {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ListenerConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    pub inboxes: Vec<PathBuf>,
+    pub state_directory: PathBuf,
+    #[serde(default = "default_listener_poll_seconds")]
+    pub poll_seconds: u64,
+    #[serde(default = "default_listener_settle_seconds")]
+    pub settle_seconds: u64,
+    #[serde(default = "default_max_bundle_bytes")]
+    pub max_bundle_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ControllerConfig {
     pub version: u32,
     pub identity_directory: PathBuf,
@@ -89,6 +118,8 @@ pub struct ControllerConfig {
     pub database: PathBuf,
     pub outbox: PathBuf,
     pub network: ControllerNetworkConfig,
+    #[serde(default)]
+    pub listener: Option<ListenerConfig>,
     #[serde(default)]
     pub approvals: ApprovalConfig,
     #[serde(default)]
@@ -112,6 +143,46 @@ impl ControllerConfig {
         resolve(&mut config.network.tls_certificate, base);
         resolve(&mut config.network.tls_private_key, base);
         resolve(&mut config.network.client_ca, base);
+        if let Some(listener) = &mut config.listener {
+            resolve(&mut listener.state_directory, base);
+            for inbox in &mut listener.inboxes {
+                resolve(inbox, base);
+            }
+            if listener.enabled && listener.inboxes.is_empty() {
+                return Err(Error::InvalidInput(
+                    "an enabled listener requires at least one inbox".into(),
+                ));
+            }
+            if listener.poll_seconds == 0 || listener.poll_seconds > 3_600 {
+                return Err(Error::InvalidInput(
+                    "listener poll_seconds must be between 1 and 3600".into(),
+                ));
+            }
+            if listener.settle_seconds > 3_600 {
+                return Err(Error::InvalidInput(
+                    "listener settle_seconds must not exceed 3600".into(),
+                ));
+            }
+            if !(1_024..=DEFAULT_MAX_BUNDLE_BYTES).contains(&listener.max_bundle_bytes) {
+                return Err(Error::InvalidInput(format!(
+                    "listener max_bundle_bytes must be between 1024 and {DEFAULT_MAX_BUNDLE_BYTES}"
+                )));
+            }
+            let mut unique = BTreeSet::new();
+            for inbox in &listener.inboxes {
+                if !unique.insert(inbox.clone()) {
+                    return Err(Error::InvalidInput(format!(
+                        "listener inbox {} is configured more than once",
+                        inbox.display()
+                    )));
+                }
+                if inbox == &listener.state_directory {
+                    return Err(Error::InvalidInput(
+                        "listener state_directory must differ from every inbox".into(),
+                    ));
+                }
+            }
+        }
         if config.network.max_frame_bytes < 1024 || config.network.lease_seconds == 0 {
             return Err(Error::InvalidInput(
                 "network limits must be positive and max_frame_bytes at least 1024".into(),

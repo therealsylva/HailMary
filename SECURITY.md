@@ -19,6 +19,7 @@ The following are treated as security boundaries:
 - `.hail`, `.mary`, `.hmpub` and `.hmk` parsing
 - Signature, encryption, key derivation and trust decisions
 - Approval thresholds and replay protection
+- Automatic-ingress stability checks, local spooling and quarantine
 - Controller/agent mutual TLS and certificate enrollment
 - Path confinement, task allowlists and command profiles
 - Audit-chain integrity and agent execution journals
