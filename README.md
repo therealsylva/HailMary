@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/false-mary.webp" alt="HailMary" width="100%" />
+</p>
+
 # HailMary
 
 HailMary is an offline-first remote systems management platform for authorized administration of air-gapped networks. Commands cross the boundary as encrypted, signed `.hail` bundles. Results return as encrypted, signed `.mary` bundles. No external machine opens a session to an internal node.
