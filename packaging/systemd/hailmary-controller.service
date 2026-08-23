@@ -1,0 +1,30 @@
+[Unit]
+Description=HailMary air-gap controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hailmary
+Group=hailmary
+ExecStart=/usr/local/bin/hailmary controller serve --config /etc/hailmary/controller.toml
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6
+ReadWritePaths=/var/lib/hailmary
+
+[Install]
+WantedBy=multi-user.target

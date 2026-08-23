@@ -1,0 +1,6 @@
+{
+  "root": "etc",
+  "files": {
+    "ssh/sshd_config": "REPLACE_WITH_SHA256"
+  }
+}

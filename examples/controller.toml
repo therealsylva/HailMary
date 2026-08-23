@@ -1,0 +1,23 @@
+version = 1
+identity_directory = "../state/controller"
+identity_password_file = "../secrets/controller.password"
+trust_store = "../state/controller-trust.json"
+database = "../state/controller.db"
+outbox = "../state/outbox"
+
+[network]
+bind = "0.0.0.0:7443"
+tls_certificate = "../state/pki/server.crt"
+tls_private_key = "../state/pki/server.key"
+client_ca = "../state/pki/ca.crt"
+max_frame_bytes = 67108864
+lease_seconds = 300
+
+[approvals]
+read_only = 1
+reversible = 1
+disruptive = 2
+critical = 2
+
+[nodes.node-001]
+certificate_sha256 = "REPLACE_WITH_CERTIFICATE_SHA256"
