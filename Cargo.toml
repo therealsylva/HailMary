@@ -10,29 +10,29 @@ keywords = ["airgap", "systems-management", "security", "offline"]
 categories = ["command-line-utilities", "network-programming"]
 
 [dependencies]
-aes-gcm = "0.10"
-argon2 = "0.5"
-base64 = "0.22"
+aes-gcm = "0.11"
+argon2 = "0.6"
+base64 = "0.23"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
 flate2 = "1.1"
 hex = "0.4"
-hkdf = "0.12"
+hkdf = "0.13"
 p256 = { version = "0.13", features = ["ecdh", "ecdsa", "pem", "pkcs8"] }
-rand = "0.8"
+rand = "0.10"
 regex = "1.11"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 rustls = "0.23"
 rustls-pki-types = { version = "1.15", features = ["std"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_jcs = "0.1"
+serde_jcs = "0.2"
 serde_json = "1.0"
-sha2 = "0.10"
-sysinfo = "0.33"
+sha2 = "0.11"
+sysinfo = "0.36"
 tar = "0.4"
 tempfile = "3.20"
 thiserror = "2.0"
-toml = "0.8"
+toml = "1.1"
 uuid = { version = "1.16", features = ["serde", "v4"] }
 wait-timeout = "0.2"
 zeroize = { version = "1.8", features = ["derive"] }
